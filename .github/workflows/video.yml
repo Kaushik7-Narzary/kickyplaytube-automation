@@ -1,5 +1,4 @@
 
-
 name: KickyPlayTube Automation
 
 on:
@@ -23,12 +22,43 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ffmpeg
 
-      - name: Generate video
-        run: python main.py
+      - name: Install Piper AI voice
+        run: |
+          pip install piper-tts
+          python -m piper.download_voices en_US-lessac-medium
+
+      - name: Generate AI narration
+        run: python generate_voice.py
+
+      - name: Convert narration to MP3
+        run: |
+          ffmpeg -y -i assets/narration.wav \
+          -codec:a libmp3lame -b:a 128k \
+          assets/narration.mp3
+
+      - name: Render video if scenes exist
+        run: |
+          if find assets/scenes -type f \
+            \( -iname "*.jpg" -o -iname "*.jpeg" \
+            -o -iname "*.png" -o -iname "*.webp" \) \
+            | grep -q .; then
+            python main.py
+          else
+            echo "Voice generated. Waiting for scene images."
+          fi
+
+      - name: Save AI narration
+        uses: actions/upload-artifact@v4
+        with:
+          name: KickyPlayTube-AI-Narration
+          path: assets/narration.wav
+          retention-days: 7
 
       - name: Save finished video
         uses: actions/upload-artifact@v4
+        if: success()
         with:
           name: KickyPlayTube-Short
           path: output/*.mp4
+          if-no-files-found: ignore
           retention-days: 7
