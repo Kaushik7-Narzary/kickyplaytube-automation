@@ -1,15 +1,16 @@
 
+
 name: KickyPlayTube Automation
 
 on:
   workflow_dispatch:
 
 jobs:
-  initialize:
+  generate:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Download project
+      - name: Checkout project
         uses: actions/checkout@v4
 
       - name: Set up Python
@@ -17,9 +18,17 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Initialize KickyPlayTube
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Generate video
         run: python main.py
 
-      - name: Confirm completion
-        run: echo "KickyPlayTube automation initialized!"
-        
+      - name: Save finished video
+        uses: actions/upload-artifact@v4
+        with:
+          name: KickyPlayTube-Short
+          path: output/*.mp4
+          retention-days: 7
